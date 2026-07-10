@@ -2,10 +2,12 @@ import axios from 'axios';
 
 // Create axios instance with base URL
 const API = axios.create({
-  baseURL: 'http://localhost:5000/api',
+  baseURL:
+    process.env.REACT_APP_API_URL ||
+    'http://localhost:5000/api',
   headers: {
-    'Content-Type': 'application/json'
-  }
+    'Content-Type': 'application/json',
+  },
 });
 
 // Add token to requests if it exists
