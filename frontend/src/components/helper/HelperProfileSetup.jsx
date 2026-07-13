@@ -60,6 +60,28 @@ const HelperProfileSetup = () => {
         
         // Populate form
         const data = profileResponse.data.data;
+        
+        // ✅ Ensure workingHours is properly structured
+        let availabilityData = data.availability || {
+          isAvailable: true,
+          workingDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+          workingHours: { start: '09:00', end: '18:00' }
+        };
+        
+        // If workingHours is a string (shouldn't happen, but just in case)
+        if (typeof availabilityData.workingHours === 'string') {
+          availabilityData.workingHours = {
+            start: availabilityData.workingHours,
+            end: '18:00'
+          };
+        }
+        
+        // If workingHours is missing or invalid
+        if (!availabilityData.workingHours || 
+            typeof availabilityData.workingHours !== 'object') {
+          availabilityData.workingHours = { start: '09:00', end: '18:00' };
+        }
+        
         setFormData({
           fullName: data.fullName || '',
           bio: data.bio || '',
@@ -67,11 +89,7 @@ const HelperProfileSetup = () => {
           yearsOfExperience: data.yearsOfExperience || '',
           skills: data.skills ? data.skills.join(', ') : '',
           languages: data.languages ? data.languages.join(', ') : '',
-          availability: data.availability || {
-            isAvailable: true,
-            workingDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
-            workingHours: { start: '09:00', end: '18:00' }
-          },
+          availability: availabilityData,
           preferredCities: data.preferredCities ? data.preferredCities.join(', ') : ''
         });
 
@@ -136,6 +154,24 @@ const HelperProfileSetup = () => {
 
     try {
       const token = localStorage.getItem('token');
+      
+      // ✅ Ensure workingHours is properly structured before sending
+      let availabilityData = { ...formData.availability };
+      
+      // If workingHours is a string (shouldn't happen, but just in case)
+      if (typeof availabilityData.workingHours === 'string') {
+        availabilityData.workingHours = {
+          start: availabilityData.workingHours,
+          end: '18:00'
+        };
+      }
+      
+      // If workingHours is missing or invalid
+      if (!availabilityData.workingHours || 
+          typeof availabilityData.workingHours !== 'object') {
+        availabilityData.workingHours = { start: '09:00', end: '18:00' };
+      }
+      
       const payload = {
         fullName: formData.fullName,
         bio: formData.bio,
@@ -143,7 +179,7 @@ const HelperProfileSetup = () => {
         yearsOfExperience: parseInt(formData.yearsOfExperience) || 0,
         skills: formData.skills.split(',').map(s => s.trim()).filter(s => s),
         languages: formData.languages.split(',').map(s => s.trim()).filter(s => s),
-        availability: formData.availability,
+        availability: availabilityData,
         preferredCities: formData.preferredCities.split(',').map(s => s.trim()).filter(s => s)
       };
 

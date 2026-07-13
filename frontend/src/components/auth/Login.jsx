@@ -7,7 +7,7 @@ import { FaEnvelope, FaLock, FaEye, FaEyeSlash } from 'react-icons/fa';
 const Login = () => {
   const navigate = useNavigate();
   const { login, error, clearError } = useAuth();
-  const { t } = useLanguage(); // ← ADD THIS
+  const { t } = useLanguage();
   
   const [formData, setFormData] = useState({
     email: '',
@@ -16,6 +16,7 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [localError, setLocalError] = useState(''); // ← ADD THIS LINE
 
   const { email, password } = formData;
 
@@ -36,33 +37,58 @@ const Login = () => {
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
     if (error) clearError();
+    if (localError) setLocalError(''); // ← ADD THIS
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
     
-    const result = await login(email, password);
-    
-    if (result.success) {
-      if (rememberMe) {
-        localStorage.setItem('rememberedEmail', email);
-        localStorage.setItem('rememberedPassword', password);
-        localStorage.setItem('rememberMe', 'true');
-      } else {
-        localStorage.removeItem('rememberedEmail');
-        localStorage.removeItem('rememberedPassword');
-        localStorage.removeItem('rememberMe');
-      }
-
-      if (result.user.role === 'admin') {
-        navigate('/admin');
-      } else {
-        navigate('/dashboard');
-      }
+    // Validate
+    if (!email || !password) {
+      setLocalError('Please fill in all fields'); // ← USE setLocalError
+      return;
     }
-    setLoading(false);
+    
+    setLoading(true);
+    setLocalError(''); // ← USE setLocalError
+    if (error) clearError();
+    
+    try {
+      const result = await login(email, password);
+      
+      if (result.success) {
+        if (rememberMe) {
+          localStorage.setItem('rememberedEmail', email);
+          localStorage.setItem('rememberedPassword', password);
+          localStorage.setItem('rememberMe', 'true');
+        } else {
+          localStorage.removeItem('rememberedEmail');
+          localStorage.removeItem('rememberedPassword');
+          localStorage.removeItem('rememberMe');
+        }
+
+        // Redirect based on role
+        if (result.user.role === 'admin') {
+          navigate('/admin');
+        } else {
+          navigate('/dashboard');
+        }
+      } else {
+        // If login failed but no error was set in context
+        if (!error) {
+          setLocalError(result.error || 'Invalid email or password');
+        }
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      setLocalError('An unexpected error occurred. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
+
+  // Display either context error or local error
+  const displayError = error || localError;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
@@ -70,17 +96,17 @@ const Login = () => {
         <div className="text-center">
           <div className="text-4xl mb-4">🔐</div>
           <h2 className="text-3xl font-extrabold text-gray-900">
-            {t.welcomeBack}
+            {t.welcomeBack || 'Welcome Back!'}
           </h2>
           <p className="mt-2 text-sm text-gray-600">
-            {t.signIn} to your account to continue
+            {t.signIn || 'Sign In'} to your account to continue
           </p>
         </div>
 
-        {error && (
+        {displayError && (
           <div className="mt-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center">
             <span className="mr-2">⚠️</span>
-            {error}
+            {displayError}
           </div>
         )}
 
@@ -88,7 +114,7 @@ const Login = () => {
           <div className="space-y-4">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                {t.email}
+                {t.email || 'Email Address'}
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -102,7 +128,7 @@ const Login = () => {
                   required
                   value={email}
                   onChange={handleChange}
-                  className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition duration-150"
+                  className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150"
                   placeholder="you@example.com"
                 />
               </div>
@@ -110,7 +136,7 @@ const Login = () => {
 
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                {t.password}
+                {t.password || 'Password'}
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -124,7 +150,7 @@ const Login = () => {
                   required
                   value={password}
                   onChange={handleChange}
-                  className="appearance-none block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition duration-150"
+                  className="appearance-none block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150"
                   placeholder="••••••••"
                 />
                 <button
@@ -150,23 +176,23 @@ const Login = () => {
                 type="checkbox"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
-                className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded cursor-pointer"
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer"
               />
               <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900 cursor-pointer">
                 {t.rememberMe || 'Remember me'}
               </label>
             </div>
             <div className="text-sm">
-              <a href="#" className="font-medium text-primary hover:text-secondary">
+              <Link to="/forgot-password" className="font-medium text-blue-600 hover:text-blue-800">
                 {t.forgotPassword || 'Forgot password?'}
-              </a>
+              </Link>
             </div>
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className={`w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition duration-150 ${
+            className={`w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ${
               loading ? 'opacity-70 cursor-not-allowed' : ''
             }`}
           >
@@ -179,14 +205,14 @@ const Login = () => {
                 {t.signingIn || 'Signing in...'}
               </>
             ) : (
-              t.signIn
+              t.signIn || 'Sign In'
             )}
           </button>
 
           <p className="text-center text-sm text-gray-600">
             {t.dontHaveAccount || "Don't have an account?"}
-            <Link to="/register" className="font-medium text-primary hover:text-secondary">
-              {t.signUp || 'Sign up now'}
+            <Link to="/register" className="ml-1 font-medium text-blue-600 hover:text-blue-800">
+              {t.signUp || 'Sign Up'}
             </Link>
           </p>
         </form>

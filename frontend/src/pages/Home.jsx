@@ -4,17 +4,11 @@ import Navbar from '../components/common/Navbar';
 import Footer from '../components/common/Footer';
 import { 
   FaArrowRight, 
-  FaStar, 
-  FaCrown, 
-  FaShieldAlt, 
+  FaStar,  
   FaUsers, 
-  FaPlay,
-  FaAward,
   FaHeart,
   FaQuoteLeft,
   FaCheckCircle,
-  FaRocket,
-  FaClock,
   FaThumbsUp,
   FaMapMarkerAlt
 } from 'react-icons/fa';
@@ -126,7 +120,6 @@ const HomeLuxury = () => {
   ];
 
   const features = [
-    // { icon: <FaShieldAlt />, title: '100% Verified', desc: 'Every helper is thoroughly background checked' },
     // { icon: <FaStar />, title: 'Top Rated', desc: '4.9 average rating from real families' },
     // { icon: <FaClock />, title: 'Quick Booking', desc: 'Book trusted helpers in minutes' },
     // { icon: <FaAward />, title: 'Award Winning', desc: 'Recognized as India\'s best platform' },

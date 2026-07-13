@@ -23,8 +23,14 @@ export const AuthProvider = ({ children }) => {
       if (token) {
         try {
           const response = await getCurrentUser();
-          setUser(response.data.user);
+          if (response.data.success) {
+            setUser(response.data.user);
+          } else {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+          }
         } catch (err) {
+          console.error('Auth check error:', err);
           localStorage.removeItem('token');
           localStorage.removeItem('user');
           setUser(null);
@@ -40,16 +46,21 @@ export const AuthProvider = ({ children }) => {
     try {
       setError(null);
       const response = await registerUser(userData);
-      const { token, user } = response.data;
       
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
-      setUser(user);
-      
-      return { success: true, user };
+      if (response.data.success) {
+        const { token, user } = response.data;
+        localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(user));
+        setUser(user);
+        return { success: true, user };
+      } else {
+        setError(response.data.message || 'Registration failed');
+        return { success: false, error: response.data.message };
+      }
     } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed');
-      return { success: false, error: err.response?.data?.message };
+      const errorMessage = err.response?.data?.message || err.message || 'Registration failed';
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
     }
   };
 
@@ -57,17 +68,41 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       setError(null);
+      
+      if (!email || !password) {
+        setError('Please provide email and password');
+        return { success: false, error: 'Please provide email and password' };
+      }
+      
       const response = await loginUser({ email, password });
-      const { token, user } = response.data;
       
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
-      setUser(user);
-      
-      return { success: true, user };
+      if (response.data.success) {
+        const { token, user } = response.data;
+        localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(user));
+        setUser(user);
+        return { success: true, user };
+      } else {
+        setError(response.data.message || 'Login failed');
+        return { success: false, error: response.data.message };
+      }
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed');
-      return { success: false, error: err.response?.data?.message };
+      // Handle different error scenarios
+      let errorMessage = 'Login failed. Please try again.';
+      
+      if (err.response) {
+        // Server responded with an error
+        errorMessage = err.response.data?.message || errorMessage;
+      } else if (err.request) {
+        // Request was made but no response
+        errorMessage = 'Server not responding. Please check your connection.';
+      } else {
+        // Something else happened
+        errorMessage = err.message || errorMessage;
+      }
+      
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
     }
   };
 
