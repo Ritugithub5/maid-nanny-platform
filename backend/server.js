@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const path = require('path'); // ✅ Added for serving frontend
 
 dotenv.config();
 
@@ -55,7 +56,28 @@ app.use('/api/attendance', attendanceRoutes);
 app.use('/api/sos', sosRoutes);
 app.use('/api/contact', contactRoutes);
 
-// 404 Handler for undefined routes
+// ============================================
+// ✅ SERVE FRONTEND STATIC FILES (Production)
+// ============================================
+// Points to the React build folder: backend/../frontend/build
+const frontendBuildPath = path.join(__dirname, '../frontend/build');
+
+// Serve static assets (JS, CSS, images, etc.)
+app.use(express.static(frontendBuildPath));
+
+// React Router fallback - any non-API route returns index.html
+// so React Router can handle client-side routing (e.g., /login, /dashboard)
+app.get('*', (req, res, next) => {
+  // Skip API routes — they should have been handled above
+  if (req.originalUrl.startsWith('/api')) {
+    return next();
+  }
+  res.sendFile(path.join(frontendBuildPath, 'index.html'), (err) => {
+    if (err) next(err);
+  });
+});
+
+// 404 Handler for undefined routes (API routes that didn't match)
 app.use((req, res) => {
   res.status(404).json({
     success: false,
@@ -67,7 +89,7 @@ app.use((req, res) => {
 // Global Error Handler
 app.use((err, req, res, next) => {
   console.error('❌ Error:', err.stack);
-  
+
   // Mongoose validation error
   if (err.name === 'ValidationError') {
     const errors = Object.values(err.errors).map(e => e.message);
@@ -77,7 +99,7 @@ app.use((err, req, res, next) => {
       errors: errors
     });
   }
-  
+
   // Mongoose duplicate key error
   if (err.code === 11000) {
     const field = Object.keys(err.keyPattern)[0];
@@ -86,7 +108,7 @@ app.use((err, req, res, next) => {
       message: `Duplicate value for ${field}. Please use a different value.`
     });
   }
-  
+
   // JWT errors
   if (err.name === 'JsonWebTokenError') {
     return res.status(401).json({
@@ -94,14 +116,14 @@ app.use((err, req, res, next) => {
       message: 'Invalid token. Please log in again.'
     });
   }
-  
+
   if (err.name === 'TokenExpiredError') {
     return res.status(401).json({
       success: false,
       message: 'Token expired. Please log in again.'
     });
   }
-  
+
   // Default error
   res.status(err.status || 500).json({
     success: false,
@@ -116,4 +138,5 @@ app.listen(PORT, () => {
   console.log(`📋 Health check: http://localhost:${PORT}/api/health`);
   console.log(`📧 Contact API: http://localhost:${PORT}/api/contact`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🎨 Frontend served from: ${frontendBuildPath}`);
 });
