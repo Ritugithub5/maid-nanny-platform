@@ -1,12 +1,13 @@
 import axios from 'axios';
 
 // Get the API URL from environment or use default
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+// ✅ Changed to empty string so it uses the current domain (works on Render)
+const API_URL = process.env.REACT_APP_API_URL || '';
 
 // Create axios instance with default config
 const api = axios.create({
   baseURL: API_URL,
-  timeout: 10000,
+  timeout: 15000, // Increased timeout slightly to handle Render cold starts
   headers: {
     'Content-Type': 'application/json',
   },

@@ -2,9 +2,8 @@ import axios from 'axios';
 
 // Create axios instance with base URL
 const API = axios.create({
-  baseURL:
-    process.env.REACT_APP_API_URL ||
-    'http://localhost:5000/api',
+  // ✅ Use relative path for production (Render deployment)
+  baseURL: process.env.REACT_APP_API_URL || '/api',
   headers: {
     'Content-Type': 'application/json',
   },
